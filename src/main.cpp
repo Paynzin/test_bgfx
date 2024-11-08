@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <bgfx/bgfx.h>
+#include <imgui.h>
 
 #include "defines.h"
 #include "imgui.h"
@@ -42,7 +43,6 @@ s32 SDL_main(s32 argc, c8** argv) {
 	bgfx_init.platformData = bgfx_platform_data;
 	
 	bgfx::init(bgfx_init);
-	bgfx::setViewClear(0, BGFX_CLEAR_COLOR, 0xBCBCBCFF);
 	bgfx::setViewRect(0, 0, 0, WIN_WIDTH, WIN_HEIGHT);
 	
 	imgui_init(window);
@@ -72,14 +72,24 @@ s32 SDL_main(s32 argc, c8** argv) {
 		}
 		
 		imgui_begin_frame();
+		
+		static BGFX_Color clear_color = { 0.0f, 0.0f, 0.75f, 1.00f };
+		static BGFX_Color quad_color = { 1.0f, 0.0f, 0.0f, 1.00f };
+		
+		ImGui::Begin("cool overlay");
+		ImGui::ColorEdit3("clear color", (f32*) &clear_color);
+		ImGui::ColorEdit3("quad color", (f32*) &quad_color);
+		ImGui::End();
 
 		bgfx::touch(0);
 		bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | BGFX_STATE_WRITE_B | BGFX_STATE_WRITE_A);
+		bgfx::setViewClear(0, BGFX_CLEAR_COLOR, bgfx_color(clear_color));
 		
 		static bgfx::VertexLayout quad_vertex_input_layout = {};
 		static bgfx::VertexBufferHandle quad_vertex_buffer = {};
 		static bgfx::IndexBufferHandle quad_index_buffer = {};
 		static bgfx::ProgramHandle quad_program = {};
+		static bgfx::UniformHandle quad_uniform_color = {};
 		static b8 is_initialized = false;
 		if (!is_initialized) {
 			File vertex_shader_bin = read_entire_file(create_string_from("shaders/spirv/default.vert.bin"), gpa);
@@ -101,8 +111,9 @@ s32 SDL_main(s32 argc, c8** argv) {
 			
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
+			quad_uniform_color = bgfx::createUniform("quad_color", bgfx::UniformType::Vec4);
 			quad_program = bgfx::createProgram(quad_vertex_shader, quad_fragment_shader, true);
-			
+
 			gpa.free(vertex_shader_bin.data);
 			gpa.free(fragment_shader_bin.data);
 			is_initialized = true;
@@ -110,6 +121,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		
 		bgfx::setVertexBuffer(0, quad_vertex_buffer);
 		bgfx::setIndexBuffer(quad_index_buffer);
+		bgfx::setUniform(quad_uniform_color, &quad_color);
 		
 		bgfx::submit(0, quad_program);
 		
