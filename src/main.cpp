@@ -69,41 +69,42 @@ s32 SDL_main(s32 argc, c8** argv) {
 		bgfx::touch(0);
 		bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | BGFX_STATE_WRITE_B | BGFX_STATE_WRITE_A);
 		
-		static bgfx::VertexLayout triangle_vertex_input_layout = {};
-		static bgfx::VertexBufferHandle triangle_vertex_buffer = {};
-		static bgfx::IndexBufferHandle triangle_index_buffer = {};
-		static bgfx::ProgramHandle triangle_program = {};
+		static bgfx::VertexLayout quad_vertex_input_layout = {};
+		static bgfx::VertexBufferHandle quad_vertex_buffer = {};
+		static bgfx::IndexBufferHandle quad_index_buffer = {};
+		static bgfx::ProgramHandle quad_program = {};
 		static b8 is_initialized = false;
 		if (!is_initialized) {
 			File vertex_shader_bin = read_entire_file(create_string_from("shaders/spirv/default.vert.bin"), gpa);
 			File fragment_shader_bin = read_entire_file(create_string_from("shaders/spirv/default.frag.bin"), gpa);
-			BGFX_Vertex triangle_vertex_data[] {
-				{ 0.0f, 0.5f }, // top
-				{ -0.5f, -0.5f }, // left
-				{ 0.5f, -0.5f }, // right
+			BGFX_Vertex quad_vertex_data[] {
+				{ -0.5f, 0.5f }, // top left
+				{ 0.5f, 0.5f }, // top right
+				{ -0.5f, -0.5f }, // bottom left
+				{ 0.5f, -0.5f }, // bottom right
 			};
-			u16 triangle_index_data[] = { 0, 1, 2 };
+			u16 quad_index_data[] = { 0, 1, 2, /**/ 1, 3, 2, };
 			
-			triangle_vertex_input_layout.begin()
+			quad_vertex_input_layout.begin()
 				.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
 			.end();
 			
-			triangle_vertex_buffer = bgfx::createVertexBuffer(bgfx::makeRef(triangle_vertex_data, sizeof(triangle_vertex_data)), triangle_vertex_input_layout);
-			triangle_index_buffer = bgfx::createIndexBuffer(bgfx::makeRef(triangle_index_data, sizeof(triangle_index_data)));
+			quad_vertex_buffer = bgfx::createVertexBuffer(bgfx::makeRef(quad_vertex_data, sizeof(quad_vertex_data)), quad_vertex_input_layout);
+			quad_index_buffer = bgfx::createIndexBuffer(bgfx::makeRef(quad_index_data, sizeof(quad_index_data)));
 			
-			bgfx::ShaderHandle triangle_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
-			bgfx::ShaderHandle triangle_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-			triangle_program = bgfx::createProgram(triangle_vertex_shader, triangle_fragment_shader, true);
+			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
+			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
+			quad_program = bgfx::createProgram(quad_vertex_shader, quad_fragment_shader, true);
 			
 			gpa.free(vertex_shader_bin.data);
 			gpa.free(fragment_shader_bin.data);
 			is_initialized = true;
 		}
 		
-		bgfx::setVertexBuffer(0, triangle_vertex_buffer);
-		bgfx::setIndexBuffer(triangle_index_buffer);
+		bgfx::setVertexBuffer(0, quad_vertex_buffer);
+		bgfx::setIndexBuffer(quad_index_buffer);
 		
-		bgfx::submit(0, triangle_program);
+		bgfx::submit(0, quad_program);
 		
 		bgfx::frame();
 	}
