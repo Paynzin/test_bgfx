@@ -4,6 +4,7 @@
 #include <bgfx/bgfx.h>
 
 #include "defines.h"
+#include "imgui.h"
 
 s32 SDL_main(s32 argc, c8** argv) {
 	Allocator gpa = {
@@ -44,10 +45,14 @@ s32 SDL_main(s32 argc, c8** argv) {
 	bgfx::setViewClear(0, BGFX_CLEAR_COLOR, 0xBCBCBCFF);
 	bgfx::setViewRect(0, 0, 0, WIN_WIDTH, WIN_HEIGHT);
 	
+	imgui_init(window);
+	
 	b8 quit = false;
 	while (!quit) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
+			imgui_process_events(&event);
+		
 			switch (event.type) {
 				case SDL_QUIT: {
 					quit = true;
@@ -65,6 +70,8 @@ s32 SDL_main(s32 argc, c8** argv) {
 				} break;
 			}
 		}
+		
+		imgui_begin_frame();
 
 		bgfx::touch(0);
 		bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | BGFX_STATE_WRITE_B | BGFX_STATE_WRITE_A);
@@ -106,6 +113,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		
 		bgfx::submit(0, quad_program);
 		
+		imgui_end_frame();
 		bgfx::frame();
 	}
 	
