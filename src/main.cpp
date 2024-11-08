@@ -111,7 +111,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 			
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-			quad_uniform_color = bgfx::createUniform("quad_color", bgfx::UniformType::Vec4);
+			quad_uniform_color = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
 			quad_program = bgfx::createProgram(quad_vertex_shader, quad_fragment_shader, true);
 
 			gpa.free(vertex_shader_bin.data);
