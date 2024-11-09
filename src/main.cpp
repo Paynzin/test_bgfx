@@ -129,6 +129,8 @@ s32 SDL_main(s32 argc, c8** argv) {
 		bgfx::frame();
 	}
 	
+	imgui_deinit();
+	bgfx::shutdown();
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
