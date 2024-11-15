@@ -83,7 +83,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		ImGui::End();
 
 		bgfx::touch(0);
-		bgfx::setState(BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | BGFX_STATE_WRITE_B | BGFX_STATE_WRITE_A);
+		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
 		bgfx::setViewClear(0, BGFX_CLEAR_COLOR, bgfx_color(clear_color));
 		
 		static bgfx::VertexLayout quad_vertex_input_layout = {};
