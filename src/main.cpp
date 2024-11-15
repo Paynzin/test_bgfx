@@ -15,6 +15,8 @@ s32 SDL_main(s32 argc, c8** argv) {
 		.free = SDL_free
 	};
 	set_string_allocator(gpa);
+	
+	u64 frequency = SDL_GetPerformanceFrequency();
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		return -1;
@@ -40,7 +42,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 	bgfx_init.type = bgfx::RendererType::Vulkan;
 	bgfx_init.resolution.width = WIN_WIDTH;
 	bgfx_init.resolution.height = WIN_HEIGHT;
-	bgfx_init.resolution.reset = BGFX_RESET_VSYNC;
+	bgfx_init.resolution.reset = BGFX_RESET_NONE;
 	bgfx_init.platformData = bgfx_platform_data;
 	
 	bgfx::init(bgfx_init);
@@ -62,8 +64,18 @@ s32 SDL_main(s32 argc, c8** argv) {
 				case SDL_WINDOWEVENT: {
 					SDL_WindowEvent window_event = event.window;
 					if (window_event.event == SDL_WINDOWEVENT_RESIZED) {
-						bgfx::reset(window_event.data1, window_event.data2, BGFX_RESET_VSYNC);
+						bgfx::reset(window_event.data1, window_event.data2, BGFX_RESET_NONE);
 						bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
+					}
+				} break;
+				
+				case SDL_KEYDOWN: {
+					if (event.key.keysym.sym == SDLK_F11) {
+						u32 window_flags = 0;
+						if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN)) {
+	                        window_flags = SDL_WINDOW_FULLSCREEN;
+	                    }
+	                    SDL_SetWindowFullscreen(window, window_flags);
 					}
 				} break;
 
@@ -72,12 +84,20 @@ s32 SDL_main(s32 argc, c8** argv) {
 			}
 		}
 		
+		// calc delta && fps
+        static u64 last_time;
+        u64 current_time = SDL_GetPerformanceCounter();
+        f32 delta = (f32) (current_time - last_time) / frequency;
+        f32 fps = 1.0f / delta;
+        last_time = current_time;
+		
 		imgui_begin_frame();
 		
 		static BGFX_Color clear_color = { 0.0f, 0.0f, 0.75f, 1.00f };
 		static BGFX_Color quad_color = { 1.0f, 1.0f, 1.0f, 1.00f };
 		
 		ImGui::Begin("cool overlay");
+		ImGui::TextColored({ 0.0f, 1.0f, 0.0f, 1.0f }, "FPS: %f", fps);
 		ImGui::ColorEdit3("clear color", (f32*) &clear_color);
 		ImGui::ColorEdit3("quad color", (f32*) &quad_color);
 		ImGui::End();
