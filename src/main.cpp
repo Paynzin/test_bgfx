@@ -6,6 +6,7 @@
 
 #include "defines.h"
 #include "imgui.h"
+#include "textures.h"
 
 s32 SDL_main(s32 argc, c8** argv) {
 	Allocator gpa = {
@@ -89,29 +90,43 @@ s32 SDL_main(s32 argc, c8** argv) {
 		static bgfx::VertexBufferHandle quad_vertex_buffer = {};
 		static bgfx::IndexBufferHandle quad_index_buffer = {};
 		static bgfx::ProgramHandle quad_program = {};
-		static bgfx::UniformHandle quad_uniform_color = {};
+		static bgfx::TextureHandle quad_texture = {};
+		static bgfx::UniformHandle quad_texture_uniform = {};
+		static bgfx::UniformHandle quad_color_uniform = {};
 		static b8 is_initialized = false;
 		if (!is_initialized) {
+			BGFX_Texture texture = bgfx_load_texture(create_string_from("assets/texture.ktx"), gpa);
 			File vertex_shader_bin = read_entire_file(create_string_from("shaders/spirv/default.vert.bin"), gpa);
 			File fragment_shader_bin = read_entire_file(create_string_from("shaders/spirv/default.frag.bin"), gpa);
 			BGFX_Vertex quad_vertex_data[] {
-				{ -0.5f, 0.5f }, // top left
-				{ 0.5f, 0.5f }, // top right
-				{ -0.5f, -0.5f }, // bottom left
-				{ 0.5f, -0.5f }, // bottom right
+				// top left
+				{ { -0.5f, 0.5f }, { 0.0f, 0.0f } },
+				// top right
+				{ { 0.5f, 0.5f }, { 1.0f, 0.0f } },
+				// bottom left
+				{ { -0.5f, -0.5f }, { 0.0f, 1.0f } },
+				// bottom right
+				{ { 0.5f, -0.5f }, { 1.0f, 1.0f } },
 			};
 			u16 quad_index_data[] = { 0, 1, 2, /**/ 1, 3, 2, };
 			
 			quad_vertex_input_layout.begin()
 				.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float, true)
 			.end();
 			
 			quad_vertex_buffer = bgfx::createVertexBuffer(bgfx::makeRef(quad_vertex_data, sizeof(quad_vertex_data)), quad_vertex_input_layout);
 			quad_index_buffer = bgfx::createIndexBuffer(bgfx::makeRef(quad_index_data, sizeof(quad_index_data)));
 			
+			u64 texture_flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_UVW_CLAMP | BGFX_SAMPLER_POINT;
+			quad_texture = bgfx::createTexture2D(texture.width, texture.height, texture.has_mips, texture.layers, texture.format, texture_flags, texture.data);
+			
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-			quad_uniform_color = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
+			
+			quad_color_uniform = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
+			quad_texture_uniform = bgfx::createUniform("s_texture", bgfx::UniformType::Sampler);
+			
 			quad_program = bgfx::createProgram(quad_vertex_shader, quad_fragment_shader, true);
 
 			gpa.free(vertex_shader_bin.data);
@@ -121,7 +136,8 @@ s32 SDL_main(s32 argc, c8** argv) {
 		
 		bgfx::setVertexBuffer(0, quad_vertex_buffer);
 		bgfx::setIndexBuffer(quad_index_buffer);
-		bgfx::setUniform(quad_uniform_color, &quad_color);
+		bgfx::setTexture(0, quad_texture_uniform, quad_texture);
+		bgfx::setUniform(quad_color_uniform, &quad_color);
 		
 		bgfx::submit(0, quad_program);
 		

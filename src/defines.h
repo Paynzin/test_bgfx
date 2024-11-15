@@ -2,8 +2,12 @@
 
 #include "base.h"
 
-struct BGFX_Vertex {
+struct BGFX_Vec2 {
 	f32 x, y;
+};
+
+struct BGFX_Vertex {
+	BGFX_Vec2 position, texture_coords;
 };
 
 struct BGFX_Color {
