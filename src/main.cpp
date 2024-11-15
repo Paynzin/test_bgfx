@@ -75,7 +75,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		imgui_begin_frame();
 		
 		static BGFX_Color clear_color = { 0.0f, 0.0f, 0.75f, 1.00f };
-		static BGFX_Color quad_color = { 1.0f, 0.0f, 0.0f, 1.00f };
+		static BGFX_Color quad_color = { 1.0f, 1.0f, 1.0f, 1.00f };
 		
 		ImGui::Begin("cool overlay");
 		ImGui::ColorEdit3("clear color", (f32*) &clear_color);
