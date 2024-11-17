@@ -303,6 +303,7 @@ target("test_bgfx")
 
 	if is_plat("windows") then
 		add_rules("win.sdk.application")
+		add_cxxflags("/Zc:preprocessor")
 	end
 
 	if is_mode("debug") then

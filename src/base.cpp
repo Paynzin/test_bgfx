@@ -11,7 +11,7 @@ static Allocator string_allocator = {
 
 static void check_string_allocator() {
 	if (string_allocator.alloc == nullptr || string_allocator.realloc == nullptr || string_allocator.free == nullptr) {
-		fprintf(stderr, "string_allocator not setted");
+		fprintf(stderr, "string_allocator not setted\n");
 		abort();
 	}
 }
