@@ -8,6 +8,10 @@
 #include "imgui.h"
 #include "textures.h"
 
+#ifdef __linux__
+#define SDL_main main
+#endif
+
 s32 SDL_main(s32 argc, c8** argv) {
 	Allocator gpa = {
 		.alloc = SDL_malloc,
@@ -15,7 +19,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		.free = SDL_free
 	};
 	set_string_allocator(gpa);
-	
+
 	u64 frequency = SDL_GetPerformanceFrequency();
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -24,43 +28,56 @@ s32 SDL_main(s32 argc, c8** argv) {
 
 	#define WIN_WIDTH 800
 	#define WIN_HEIGHT 600
-	
+
 	SDL_Window* window = SDL_CreateWindow("test bgfx", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIN_WIDTH, WIN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (window == nullptr) {
 		return -1;
 	}
 
-	// get native window handle for windows
+	// get native window handle
 	SDL_SysWMinfo wm_info;
 	SDL_VERSION(&wm_info.version);
 	SDL_GetWindowWMInfo(window, &wm_info);
-	
 	bgfx::PlatformData bgfx_platform_data = {};
+
+	#ifdef _WIN32
 	bgfx_platform_data.nwh = wm_info.info.win.window;
-	
+	#else
+	// check for wayland support if not fallback to x11
+	const c8* video_driver = SDL_GetCurrentVideoDriver();
+	if (strcmp(video_driver, "wayland") == 0) {
+		bgfx_platform_data.ndt = wm_info.info.wl.display;
+		bgfx_platform_data.nwh = wm_info.info.wl.surface;
+		bgfx_platform_data.type = bgfx::NativeWindowHandleType::Wayland;
+	} else {
+		bgfx_platform_data.ndt = wm_info.info.x11.display;
+		bgfx_platform_data.nwh = (void*) wm_info.info.x11.window;
+	}
+	#endif
+
 	bgfx::Init bgfx_init = {};
 	bgfx_init.type = bgfx::RendererType::Vulkan;
 	bgfx_init.resolution.width = WIN_WIDTH;
 	bgfx_init.resolution.height = WIN_HEIGHT;
 	bgfx_init.resolution.reset = BGFX_RESET_NONE;
 	bgfx_init.platformData = bgfx_platform_data;
-	
+
 	bgfx::init(bgfx_init);
 	bgfx::setViewRect(0, 0, 0, WIN_WIDTH, WIN_HEIGHT);
-	
+
 	imgui_init(window);
-	
+
 	b8 quit = false;
 	while (!quit) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			imgui_process_events(&event);
-		
+
 			switch (event.type) {
 				case SDL_QUIT: {
 					quit = true;
 				} break;
-				
+
 				case SDL_WINDOWEVENT: {
 					SDL_WindowEvent window_event = event.window;
 					if (window_event.event == SDL_WINDOWEVENT_RESIZED) {
@@ -68,7 +85,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 						bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
 					}
 				} break;
-				
+
 				case SDL_KEYDOWN: {
 					if (event.key.keysym.sym == SDLK_F11) {
 						u32 window_flags = 0;
@@ -83,19 +100,19 @@ s32 SDL_main(s32 argc, c8** argv) {
 				} break;
 			}
 		}
-		
+
 		// calc delta && fps
         static u64 last_time;
         u64 current_time = SDL_GetPerformanceCounter();
         f32 delta = (f32) (current_time - last_time) / frequency;
         f32 fps = 1.0f / delta;
         last_time = current_time;
-		
+
 		imgui_begin_frame();
-		
+
 		static BGFX_Color clear_color = { 0.0f, 0.0f, 0.75f, 1.00f };
 		static BGFX_Color quad_color = { 1.0f, 1.0f, 1.0f, 1.00f };
-		
+
 		ImGui::Begin("cool overlay");
 		ImGui::TextColored({ 0.0f, 1.0f, 0.0f, 1.0f }, "FPS: %f", fps);
 		ImGui::ColorEdit3("clear color", (f32*) &clear_color);
@@ -105,7 +122,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		bgfx::touch(0);
 		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
 		bgfx::setViewClear(0, BGFX_CLEAR_COLOR, bgfx_color(clear_color));
-		
+
 		static bgfx::VertexLayout quad_vertex_input_layout = {};
 		static bgfx::VertexBufferHandle quad_vertex_buffer = {};
 		static bgfx::IndexBufferHandle quad_index_buffer = {};
@@ -129,42 +146,42 @@ s32 SDL_main(s32 argc, c8** argv) {
 				{ { 0.5f, -0.5f }, { 1.0f, 1.0f } },
 			};
 			u16 quad_index_data[] = { 0, 1, 2, /**/ 1, 3, 2, };
-			
+
 			quad_vertex_input_layout.begin()
 				.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
 				.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float, true)
 			.end();
-			
+
 			quad_vertex_buffer = bgfx::createVertexBuffer(bgfx::makeRef(quad_vertex_data, sizeof(quad_vertex_data)), quad_vertex_input_layout);
 			quad_index_buffer = bgfx::createIndexBuffer(bgfx::makeRef(quad_index_data, sizeof(quad_index_data)));
-			
+
 			u64 texture_flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_UVW_CLAMP | BGFX_SAMPLER_POINT;
 			quad_texture = bgfx::createTexture2D(texture.width, texture.height, texture.has_mips, texture.layers, texture.format, texture_flags, texture.data);
-			
+
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-			
+
 			quad_color_uniform = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
 			quad_texture_uniform = bgfx::createUniform("s_texture", bgfx::UniformType::Sampler);
-			
+
 			quad_program = bgfx::createProgram(quad_vertex_shader, quad_fragment_shader, true);
 
 			gpa.free(vertex_shader_bin.data);
 			gpa.free(fragment_shader_bin.data);
 			is_initialized = true;
 		}
-		
+
 		bgfx::setVertexBuffer(0, quad_vertex_buffer);
 		bgfx::setIndexBuffer(quad_index_buffer);
 		bgfx::setTexture(0, quad_texture_uniform, quad_texture);
 		bgfx::setUniform(quad_color_uniform, &quad_color);
-		
+
 		bgfx::submit(0, quad_program);
-		
+
 		imgui_end_frame();
 		bgfx::frame();
 	}
-	
+
 	imgui_deinit();
 	bgfx::shutdown();
 	SDL_DestroyWindow(window);
