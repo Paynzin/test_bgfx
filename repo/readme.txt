@@ -1,0 +1,1 @@
+This is a local xmake repository that contains modified versions of some packages.

@@ -1,7 +1,7 @@
 add_repositories("local-repo repo")
 
 add_rules("mode.debug", "mode.release", "assets", "@bgfx-custom/shaders")
-add_requires("libsdl", "bgfx-custom", "imgui", { configs = { sdl2_no_renderer = true } })
+add_requires("libsdl", "bgfx-custom", "glm-custom", "imgui", { configs = { simd = "SSE4_2", sdl2_no_renderer = true } })
 
 rule("assets")
 	set_extensions(".ktx", ".ogg")
@@ -22,7 +22,7 @@ target("test_bgfx")
     add_files("src/shaders/*.vert", { output_dir = "shaders", profiles = { spirv = "spirv" } })
     add_files("src/shaders/*.frag", { output_dir = "shaders", profiles = { spirv = "spirv" } })
     add_files("assets/*")
-	add_packages("libsdl", "bgfx-custom", "imgui")
+	add_packages("libsdl", "bgfx-custom", "glm-custom", "imgui")
 
 	if is_plat("windows") then
 		add_rules("win.sdk.application")
