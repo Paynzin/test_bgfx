@@ -2,6 +2,9 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
 #include "defines.h"
@@ -112,11 +115,13 @@ s32 SDL_main(s32 argc, c8** argv) {
 
 		static BGFX_Color clear_color = { 0.0f, 0.0f, 0.75f, 1.00f };
 		static BGFX_Color quad_color = { 1.0f, 1.0f, 1.0f, 1.00f };
+		static f32 quad_scale = 1.0f;
 
 		ImGui::Begin("cool overlay");
 		ImGui::TextColored({ 0.0f, 1.0f, 0.0f, 1.0f }, "FPS: %f", fps);
 		ImGui::ColorEdit3("clear color", (f32*) &clear_color);
 		ImGui::ColorEdit3("quad color", (f32*) &quad_color);
+		ImGui::SliderFloat("quad scale", &quad_scale, 0.0f, 3.0f);
 		ImGui::End();
 
 		bgfx::touch(0);
@@ -129,6 +134,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 		static bgfx::ProgramHandle quad_program = {};
 		static bgfx::TextureHandle quad_texture = {};
 		static bgfx::UniformHandle quad_texture_uniform = {};
+		static bgfx::UniformHandle quad_transform_uniform = {};
 		static bgfx::UniformHandle quad_color_uniform = {};
 		static b8 is_initialized = false;
 		if (!is_initialized) {
@@ -160,7 +166,8 @@ s32 SDL_main(s32 argc, c8** argv) {
 
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-
+			
+			quad_transform_uniform = bgfx::createUniform("u_quad_transform", bgfx::UniformType::Mat4);
 			quad_color_uniform = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
 			quad_texture_uniform = bgfx::createUniform("s_texture", bgfx::UniformType::Sampler);
 
@@ -170,11 +177,15 @@ s32 SDL_main(s32 argc, c8** argv) {
 			gpa.free(fragment_shader_bin.data);
 			is_initialized = true;
 		}
+		
+		glm::mat4 quad_transform = glm::mat4(1.0f);
+		quad_transform = glm::scale(quad_transform, glm::vec3(quad_scale, quad_scale, quad_scale));
 
 		bgfx::setVertexBuffer(0, quad_vertex_buffer);
 		bgfx::setIndexBuffer(quad_index_buffer);
-		bgfx::setTexture(0, quad_texture_uniform, quad_texture);
+		bgfx::setUniform(quad_transform_uniform, glm::value_ptr(quad_transform));
 		bgfx::setUniform(quad_color_uniform, &quad_color);
+		bgfx::setTexture(0, quad_texture_uniform, quad_texture);
 
 		bgfx::submit(0, quad_program);
 
