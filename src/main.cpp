@@ -158,15 +158,15 @@ s32 SDL_main(s32 argc, c8** argv) {
 				.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float, true)
 			.end();
 
-			quad_vertex_buffer = bgfx::createVertexBuffer(bgfx::makeRef(quad_vertex_data, sizeof(quad_vertex_data)), quad_vertex_input_layout);
-			quad_index_buffer = bgfx::createIndexBuffer(bgfx::makeRef(quad_index_data, sizeof(quad_index_data)));
+			quad_vertex_buffer = bgfx::createVertexBuffer(bgfx::copy(quad_vertex_data, sizeof(quad_vertex_data)), quad_vertex_input_layout);
+			quad_index_buffer = bgfx::createIndexBuffer(bgfx::copy(quad_index_data, sizeof(quad_index_data)));
 
 			u64 texture_flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_UVW_CLAMP | BGFX_SAMPLER_POINT;
 			quad_texture = bgfx::createTexture2D(texture.width, texture.height, texture.has_mips, texture.layers, texture.format, texture_flags, texture.data);
 
 			bgfx::ShaderHandle quad_vertex_shader = bgfx::createShader(bgfx::copy(vertex_shader_bin.data, vertex_shader_bin.size));
 			bgfx::ShaderHandle quad_fragment_shader = bgfx::createShader(bgfx::copy(fragment_shader_bin.data, fragment_shader_bin.size));
-			
+
 			quad_transform_uniform = bgfx::createUniform("u_quad_transform", bgfx::UniformType::Mat4);
 			quad_color_uniform = bgfx::createUniform("u_quad_color", bgfx::UniformType::Vec4);
 			quad_texture_uniform = bgfx::createUniform("s_texture", bgfx::UniformType::Sampler);
@@ -177,7 +177,7 @@ s32 SDL_main(s32 argc, c8** argv) {
 			gpa.free(fragment_shader_bin.data);
 			is_initialized = true;
 		}
-		
+
 		glm::mat4 quad_transform = glm::mat4(1.0f);
 		quad_transform = glm::scale(quad_transform, glm::vec3(quad_scale, quad_scale, quad_scale));
 
