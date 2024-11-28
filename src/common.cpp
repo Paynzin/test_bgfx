@@ -1,17 +1,12 @@
-#pragma once
-
 #include "base.h"
+#include <SDL.h>
 
-struct BGFX_Vec2 {
-	f32 x, y;
-};
+#include "common.h"
 
-struct BGFX_Vertex {
-	BGFX_Vec2 position, texture_coords;
-};
-
-struct BGFX_Color {
-	f32 r, g, b, a;
+Allocator gpa = {
+	.alloc = SDL_malloc,
+	.realloc = SDL_realloc,
+	.free = SDL_free
 };
 
 static inline u8 clamp_and_scale(f32 value) {
